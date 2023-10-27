@@ -7,23 +7,29 @@
 GLFWwindow* window;
 const char* vertexShaderSource = "#version 330 core\n"
 "layout (location = 0) in vec3 aPos;\n"
+"layout (location = 1) in vec3 aCol;\n"
+"out vec3 ourCol;\n"
 "void main()\n"
 "{\n"
-"   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-"}\0";
+"   gl_Position = vec4(aPos, 1.0);\n"
+"   ourCol = aCol;\n"
+"}\n";
 
 const char* fragmentShaderSource = "#version 330 core\n"
 "out vec4 FragColor;\n"
+"uniform vec4 ourColor;\n"
+"in vec3 ourCol;\n"
 "void main()\n"
 "{\n"
-"    FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+"    FragColor = ourColor;\n"
 "}\n";
 
 const char* fragmentShaderSource2 = "#version 330 core\n"
 "out vec4 FragColor;\n"
+"in vec3 ourCol;\n"
 "void main()\n"
 "{\n"
-"    FragColor = vec4(1.0f, 0.f, 0.f, 0.0f);\n"
+"    FragColor = vec4(ourCol,1.0f);\n"
 "}\n";
 
 float x, y;
@@ -161,9 +167,9 @@ bool initializeVertexbuffer() {
     };
 
     float seccondTriangle[]{
-        0.0f,0.0f,0.0f,
-        0.5f,0.0f,0.0f,
-        0.0f,0.5f,0.0f
+        0.0f,0.0f,0.0f, 1.0f, 0.0f, 0.0f,
+        0.5f,0.0f,0.0f, 0.0f, 1.0f, 0.0f,
+        0.0f,0.5f,0.0f, 0.0f, 0.0f, 1.0f,
     };
     
     
@@ -179,8 +185,10 @@ bool initializeVertexbuffer() {
     glBindVertexArray(VertexArrayID[1]);
     glBindBuffer(GL_ARRAY_BUFFER,vertexbuffer[1]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(seccondTriangle), seccondTriangle, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0); 
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 
     
     
@@ -215,7 +223,7 @@ bool compileShader() {
     unsigned int fragmentShader2;
     fragmentShader2 = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fragmentShader2, 1, &fragmentShaderSource2, NULL);
-    glCompileShader(fragmentShader);
+    glCompileShader(fragmentShader2);
 
 
     programID = glCreateProgram();
@@ -251,14 +259,22 @@ void updateAnimationLoop(){
     // Clear the screen
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
+    float timeValue = glfwGetTime();
+    //float greenValue = (sin(timeValue) / 2.0f) + 0.5f;
+    float redValue = (cos(timeValue) / 2.0f) + 0.5f;
 
+    int vertexColorLocation = glGetUniformLocation(programID, "ourColor");
     glUseProgram(programID);
+    glUniform4f(vertexColorLocation, redValue, 0.0f, 0.0f, 1.0f);
     glBindVertexArray(VertexArrayID[0]);
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
+
+    
+ 
     glUseProgram(programIDYellow);
     glBindVertexArray(VertexArrayID[1]);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glDrawArrays(GL_TRIANGLES, 0, 3);
+    
 
 }
