@@ -5,7 +5,7 @@
 
 unsigned int vertexbuffer;
 unsigned int VertexArrayID;
-unsigned int vertexbugger_size;
+unsigned int vertexbuffer_size;
 
 //ProgramID of the shader, required for handling with opengl
 
@@ -17,3 +17,4 @@ bool initializeWindow(); //<<< initializes the window using GLFW and GLEW
 bool initializeVertexbuffer(); //<<< initializes the vertex buffer array and binds it OpenGL
 bool cleanupVertexbuffer(); //<<< frees all recources from the vertex buffer
 bool closeWindow(); //<<< Closes the OpenGL window and terminates GLFW
+bool compileShader();  
