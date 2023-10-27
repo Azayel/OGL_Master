@@ -19,6 +19,16 @@ const char* fragmentShaderSource = "#version 330 core\n"
 "    FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
 "}\n";
 
+const char* fragmentShaderSource2 = "#version 330 core\n"
+"out vec4 FragColor;\n"
+"void main()\n"
+"{\n"
+"    FragColor = vec4(1.0f, 0.f, 0.f, 0.0f);\n"
+"}\n";
+
+float x, y;
+
+bool vbinit = false;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
@@ -30,11 +40,25 @@ void processInput(GLFWwindow* window) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
     }
+    else if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+        y += 0.001;
+    }
+    else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+        y -= 0.001;
+    }
+    else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+        x -= 0.001;
+    }
+    else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+        x += 0.001;
+    }
 
 }
 
 int main( void )
 {
+    x={ 0 };
+    y={ 0 };
     bool windowInitialized = initializeWindow();
     if (!windowInitialized) {
         return -1;
@@ -45,17 +69,15 @@ int main( void )
 
     bool vertexBufferInitialized = initializeVertexbuffer();
     if (!vertexBufferInitialized) return -1;
-
+    vbinit = true;
     //Now compile the shaders
     bool ShaderCompiled = compileShader();
     if (!ShaderCompiled) {
         return -1;
     }
 
-    //Use The compiled shader:> Every shader and rendering call will use these shader now!
-    glUseProgram(programID);
    
-
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); WIRE FRAME
 
 
     while (!glfwWindowShouldClose(window))
@@ -65,7 +87,7 @@ int main( void )
         processInput(window);
 
         //rendering loop here
-
+        
         updateAnimationLoop();
 
         //Check and call events and swap the buffers here!
@@ -74,8 +96,8 @@ int main( void )
         
     }
 
-    glDeleteVertexArrays(1, &VertexArrayID); 
-    glDeleteBuffers(1, &vertexbuffer);  
+    glDeleteVertexArrays(1, VertexArrayID); 
+    glDeleteBuffers(1, vertexbuffer);  
     glDeleteProgram(programID);
 
     glfwTerminate();
@@ -125,20 +147,43 @@ bool initializeWindow() {
 
 bool initializeVertexbuffer() {
     
+    
+    glGenVertexArrays(2, VertexArrayID);
+    //glGenBuffers(1, &elementbufferobject);
+    glGenBuffers(2, vertexbuffer);
+       
+    
 
-    glGenVertexArrays(1, &VertexArrayID);
-    glBindVertexArray(VertexArrayID);
-
-    float vertices[] = {
-    -0.5f, -0.5f, 0.0f,
-     0.5f, -0.5f, 0.0f,
-     0.0f,  0.5f, 0.0f
+    float firstTriangle[]{
+        -0.5f,0.0f,0.0f,
+        0.0f,0.0f,0.0f,
+        0.0f,0.5f,0.0f
     };
 
-    glGenBuffers(1, &vertexbuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+    float seccondTriangle[]{
+        0.0f,0.0f,0.0f,
+        0.5f,0.0f,0.0f,
+        0.0f,0.5f,0.0f
+    };
+    
+    
+    //Initializing first triangle
+    glBindVertexArray(VertexArrayID[0]);
+    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer[0]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(firstTriangle), firstTriangle, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
 
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    //Initialize seccond tirangle
+    glBindVertexArray(VertexArrayID[1]);
+    glBindBuffer(GL_ARRAY_BUFFER,vertexbuffer[1]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(seccondTriangle), seccondTriangle, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0); 
+
+    
+    
 
     return true;
 
@@ -167,13 +212,22 @@ bool compileShader() {
     glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
     glCompileShader(fragmentShader);
 
+    unsigned int fragmentShader2;
+    fragmentShader2 = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragmentShader2, 1, &fragmentShaderSource2, NULL);
+    glCompileShader(fragmentShader);
+
 
     programID = glCreateProgram();
-
+    programIDYellow = glCreateProgram();
 
     glAttachShader(programID, vertexShader);
     glAttachShader(programID, fragmentShader);
     glLinkProgram(programID);
+
+    glAttachShader(programIDYellow, vertexShader);
+    glAttachShader(programIDYellow, fragmentShader2);
+    glLinkProgram(programIDYellow);
 
     glGetProgramiv(programID, GL_LINK_STATUS, &success);
     if (!success) {
@@ -187,6 +241,7 @@ bool compileShader() {
 
     glDeleteShader(vertexShader); 
     glDeleteShader(fragmentShader); 
+    glDeleteShader(fragmentShader2);
 
     return true;
 }
@@ -197,19 +252,13 @@ void updateAnimationLoop(){
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    /*
-        One Vertex is a collection of x y z coordinates. We need to specify how what part of input to which vertex.
-        Vertex 1    Vertex 2        Vertex 3
-        x   y   z   x   y   z       x y z
-        4B  4B  4B  4B ...
-        Stride 12 bytes
-        meaning vertex 2 begins at the 12th byte
-    */
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    // 3 meaning vec3 xyz
-
-    glEnableVertexAttribArray(0);
-
+    glUseProgram(programID);
+    glBindVertexArray(VertexArrayID[0]);
     glDrawArrays(GL_TRIANGLES, 0, 3);
+
+    glUseProgram(programIDYellow);
+    glBindVertexArray(VertexArrayID[1]);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+
 }

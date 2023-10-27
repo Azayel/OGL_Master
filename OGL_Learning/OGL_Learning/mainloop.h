@@ -3,13 +3,15 @@
 
 //Vertex Buffer Handling
 
-unsigned int vertexbuffer;
-unsigned int VertexArrayID;
+unsigned int vertexbuffer[2];
+unsigned int VertexArrayID[2];
 unsigned int vertexbuffer_size;
+unsigned int elementbufferobject;
 
 //ProgramID of the shader, required for handling with opengl
 
 unsigned int programID;
+unsigned int programIDYellow;
 
 int main(void); //<<< main function, called at startup
 void updateAnimationLoop(); //<<< updates the animation loop
