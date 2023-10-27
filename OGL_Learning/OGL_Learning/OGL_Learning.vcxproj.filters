@@ -20,4 +20,9 @@
     </ClCompile>
     <ClCompile Include="..\..\glad.c" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="mainloop.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
 </Project>
