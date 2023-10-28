@@ -69,6 +69,11 @@ Shader::Shader(const char* vertexPath, const char* framgentPath) {
 void Shader::use() {
 	glUseProgram(ID);
 }
+
+const unsigned int Shader::getID() {
+	return ID;
+}
+
 //utility uniform function    
 void Shader::setBool(const std::string &name, bool value) const
 {

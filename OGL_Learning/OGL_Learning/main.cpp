@@ -29,16 +29,16 @@ void processInput(GLFWwindow* window) {
         glfwSetWindowShouldClose(window, true);
     }
     else if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-        y += 0.001;
+        y += 0.001f;
     }
     else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        y -= 0.001;
+        y -= 0.001f;
     }
     else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-        x -= 0.001;
+        x -= 0.001f;
     }
     else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-        x += 0.001;
+        x += 0.001f;
     }
 
 }
@@ -70,6 +70,7 @@ int main( void )
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); WIRE FRAME
     Shader myShader("shader.vert", "shader.frag");
     myShader.use();
+    programID = myShader.getID();
 
     while (!glfwWindowShouldClose(window))
     {
@@ -151,6 +152,11 @@ bool initializeVertexbuffer() {
         0.0f,0.8f,0.0f, 0.5f, 0.0f, 0.5f,
     };
 
+
+    float diagonalLine[]{
+        -1.0f, -1.0f,0.0f, 1.0f, 0.0f, 0.0f,
+        1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+    };
   
     
     
@@ -164,7 +170,15 @@ bool initializeVertexbuffer() {
     glEnableVertexAttribArray(1);
 
 
+    //Initialize diagonal line 
 
+    glBindVertexArray(VertexArrayID[1]);
+    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer[1]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(diagonalLine), diagonalLine, GL_STATIC_DRAW);
+    glVertexAttribPointer(0,3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0),
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
     
     
 
@@ -180,9 +194,15 @@ void updateAnimationLoop(){
     glClear(GL_COLOR_BUFFER_BIT);
     
     
+   // int uniformlocation = glGetUniformLocation(programID, "addPos");
+    //glUniform3f(uniformlocation, x, y, 0);
+   // glBindVertexArray(VertexArrayID[0]);
+   // glDrawArrays(GL_TRIANGLES, 0, 3);
 
-    glBindVertexArray(VertexArrayID[0]);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+    int uniformlocation = glGetUniformLocation(programID, "addPos");
+    glUniform3f(uniformlocation, x, y, 0);
+    glBindVertexArray(VertexArrayID[1]);
+    glDrawArrays(GL_LINES,0,2);
 
 
     
