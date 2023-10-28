@@ -7,13 +7,13 @@
 //Window
 GLFWwindow* window;
 
-
-
-
-const int cell_dimension = 20;
-const int sq_size = 800 / cell_dimension;
 const int width{ 800 };
 const int height{ 800 };
+
+
+const int cell_dimension = 5;
+const int sq_size = width / cell_dimension;
+
 float x, y;
 
 bool vbinit = false;
@@ -35,7 +35,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         
         int mousex = (xpos / width) * cell_dimension;
         int mousey = (ypos / height) * cell_dimension;
-
+        std::cout << mousex << mousey << std::endl;
          
         
     }
@@ -72,8 +72,9 @@ int main( void )
         return -1;
     }
 
-    glViewport(0, 0, width, height);
+    
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glViewport(0, 0, width, height);
     glfwSetMouseButtonCallback(window, mouse_button_callback);
     bool vertexBufferInitialized = initializeVertexbuffer();
     if (!vertexBufferInitialized) return -1;
@@ -128,7 +129,7 @@ bool initializeWindow() {
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
-    window = glfwCreateWindow(800, 600, "LearnOpenGL", NULL, NULL);
+    window = glfwCreateWindow(width, height, "LearnOpenGL", NULL, NULL);
 
     if (window == NULL)
     {
@@ -166,37 +167,16 @@ bool initializeVertexbuffer() {
        
     
 
-    float firstTriangle[]{
-        -0.8f,0.0f,0.0f, 0.5f, 0.0f, 0.5f,
-        0.8f,0.0f,0.0f, 0.5f, 0.0f, 0.5f,
-        0.0f,0.8f,0.0f, 0.5f, 0.0f, 0.5f,
-    };
-
-
-    float diagonalLine[]{
-        -1.0f, -1.0f,0.0f, 1.0f, 0.0f, 0.0f,
-        1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f,
-    };
-  
-   
-    
-    //Initializing first triangle
-    glBindVertexArray(VertexArrayID[0]);
-    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer[0]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(firstTriangle), firstTriangle, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-
-    
-
-    for (float x = -1.0f; x < 1.0f; x += (2.0f / cell_dimension)) {
-        for (float y = -1.0f; y < 1.0f; y += (2.0f / cell_dimension)) {
+    for (float x = -1.0f; x <= 1.0f; x += (2.0f / cell_dimension)) {
+        for (float y = -1.0f; y <= 1.0f; y += (2.0f / cell_dimension)) {
             grid.insert(grid.end(), { x, -1.0f, 0.0f, 1.0f, 1.0f, 1.0f });
             grid.insert(grid.end(), { x, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f });
             grid.insert(grid.end(), { -1.0f, y, 0.0f, 1.0f, 1.0f, 1.0f });
             grid.insert(grid.end(), { 1.0f, y, 0.0f, 1.0f, 1.0f, 1.0f });
+
+            if (y > 1 || y < -1 || x>1 || x<-1) {
+                std::cout << "is larger\n";
+            }
         }
     }
     
