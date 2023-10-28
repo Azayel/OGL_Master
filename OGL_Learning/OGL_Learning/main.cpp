@@ -35,7 +35,9 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         
         int mousex = (xpos / width) * cell_dimension;
         int mousey = (ypos / height) * cell_dimension;
-        std::cout << mousex << mousey << std::endl;
+        float nMx = (xpos - (width / 2)) / (width / 2);
+        float nMy = -(ypos - (height / 2)) / (height / 2);
+        std::cout << "nx: " << nMx << " ny: " << nMy << std::endl;
          
         
     }
