@@ -3,18 +3,23 @@
 #include <glad/glad.h>
 #include <glfw3.h>
 #include <iostream>
-
+#include <vector>
 //Window
 GLFWwindow* window;
 
 
 
 
-
-
+const int cell_dimension = 20;
+const int sq_size = 800 / cell_dimension;
+const int width{ 800 };
+const int height{ 800 };
 float x, y;
 
 bool vbinit = false;
+
+std::vector<float> grid;
+int clickgird[];
 
 
 
@@ -22,9 +27,23 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
 }
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+        double xpos, ypos;
+        glfwGetCursorPos(window, &xpos, &ypos);
+        
+        
+        int mousex = (xpos / width) * cell_dimension;
+        int mousey = (ypos / height) * cell_dimension;
+
+         
+        
+    }
+}
+
 
 void processInput(GLFWwindow* window) {
-
+    int button, action;
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
     }
@@ -40,6 +59,7 @@ void processInput(GLFWwindow* window) {
     else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
         x += 0.001f;
     }
+    
 
 }
 
@@ -52,9 +72,9 @@ int main( void )
         return -1;
     }
 
-    glViewport(0, 0, 800, 600);
+    glViewport(0, 0, width, height);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
     bool vertexBufferInitialized = initializeVertexbuffer();
     if (!vertexBufferInitialized) return -1;
     vbinit = true;
@@ -158,7 +178,7 @@ bool initializeVertexbuffer() {
         1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f,
     };
   
-    
+   
     
     //Initializing first triangle
     glBindVertexArray(VertexArrayID[0]);
@@ -169,12 +189,24 @@ bool initializeVertexbuffer() {
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
+    
+
+    for (float x = -1.0f; x < 1.0f; x += (2.0f / cell_dimension)) {
+        for (float y = -1.0f; y < 1.0f; y += (2.0f / cell_dimension)) {
+            grid.insert(grid.end(), { x, -1.0f, 0.0f, 1.0f, 1.0f, 1.0f });
+            grid.insert(grid.end(), { x, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f });
+            grid.insert(grid.end(), { -1.0f, y, 0.0f, 1.0f, 1.0f, 1.0f });
+            grid.insert(grid.end(), { 1.0f, y, 0.0f, 1.0f, 1.0f, 1.0f });
+        }
+    }
+    
+
+    
 
     //Initialize diagonal line 
-
     glBindVertexArray(VertexArrayID[1]);
     glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer[1]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(diagonalLine), diagonalLine, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, grid.size()*sizeof(float), grid.data(), GL_STATIC_DRAW);
     glVertexAttribPointer(0,3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0),
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
@@ -202,7 +234,7 @@ void updateAnimationLoop(){
     int uniformlocation = glGetUniformLocation(programID, "addPos");
     glUniform3f(uniformlocation, x, y, 0);
     glBindVertexArray(VertexArrayID[1]);
-    glDrawArrays(GL_LINES,0,2);
+    glDrawArrays(GL_LINES,0,grid.size());
 
 
     
