@@ -51,6 +51,8 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         int row = (int)((ypos - gridy) / cell_width);
         std::cout << column << " " << row << " " << cell_width <<  std::endl;
         
+        if (!(column >= 0 && column < cell_dimension && row >= 0 && row < cell_dimension)) return;
+           
         
         //1. Get the 4 Vertex Coordiates
         float xlt = column * cell_width;
