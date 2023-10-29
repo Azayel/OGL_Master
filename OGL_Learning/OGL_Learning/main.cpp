@@ -15,10 +15,10 @@ const float width{ 1000 };
 const float height{ 1000 };
 
 
-const int cell_dimension = 5;
+const int cell_dimension = 20;
 const int sq_size = width / cell_dimension;
 
-float x, y;
+float gridx, gridy;
 
 bool vbinit = false;
 bool clicked = false;
@@ -27,7 +27,14 @@ int clickgird[];
 std::vector<float> rectangles;
 std::vector<int> rect_indices;
 unsigned int EBO;
-glm::mat4 projection = glm::ortho(0.0f, width, 0.0f, height, -1.0f, 1.0f);
+glm::mat4 projection = glm::ortho(0.0f, width, height, 0.0f, -1.0f, 1.0f);
+
+struct RectangleVertex {
+    float x, y, z;
+};
+
+std::vector<RectangleVertex> rectangle_verticies;
+std::vector<unsigned int> rectangle_indicies;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
@@ -36,12 +43,57 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
         double xpos, ypos;
+       
         glfwGetCursorPos(window, &xpos, &ypos);
+        std::cout << xpos << " " << ypos << std::endl;
         double cell_width = width / (double)cell_dimension;
-        int column = (int)(xpos / cell_width);
-        int row = (int)(ypos / cell_width);
+        int column = (int)((xpos- gridx) / cell_width);
+        int row = (int)((ypos - gridy) / cell_width);
         std::cout << column << " " << row << " " << cell_width <<  std::endl;
         
+        
+        //1. Get the 4 Vertex Coordiates
+        float xlt = column * cell_width;
+        float ylt = row * cell_width;
+        float xrt = xlt + cell_width;
+        float yrt = ylt;
+        float xlb = xlt;
+        float ylb = ylt + cell_width;
+        float xrb = xlb + cell_width;
+        float yrb = ylb;
+
+        unsigned int indices[] = {
+            0, 1, 2,
+            2, 3, 0
+        };
+
+        rectangle_verticies.insert(rectangle_verticies.end(), { 
+            RectangleVertex{xlt, ylt, 0.0f}, 
+            RectangleVertex{xrt, yrt, 0.0f},
+            RectangleVertex{xrb, yrb, 0.0f},
+            RectangleVertex{xlb, ylb, 0.0f}
+        });
+
+        std::cout << "XLT: " << xlt << " ylt: " << ylt << std::endl;
+
+        unsigned int baseIndex = rectangle_verticies.size() - 4; 
+        for (unsigned int i = 0; i < 6; i++) {
+            rect_indices.push_back(baseIndex + indices[i]);
+        }
+        
+        glBindVertexArray(VertexArrayID[0]);
+        glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer[0]);
+
+        glBufferData(GL_ARRAY_BUFFER, rectangle_verticies.size() * sizeof(RectangleVertex), rectangle_verticies.data(), GL_STATIC_DRAW);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
+
+        
+
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, rect_indices.size() * sizeof(unsigned int), rect_indices.data(), GL_STATIC_DRAW);
+
     }
 }
 
@@ -52,16 +104,16 @@ void processInput(GLFWwindow* window) {
         glfwSetWindowShouldClose(window, true);
     }
     else if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-        y += 10.0f;
+        gridy += 10.0f;
     }
     else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        y -= 10.0f;
+        gridy -= 10.0f;
     }
     else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-        x -= 10.0f;
+        gridx -= 10.0f;
     }
     else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-        x += 10.0f;
+        gridx += 10.0f;
     }
     
 
@@ -69,8 +121,8 @@ void processInput(GLFWwindow* window) {
 
 int main( void )
 {
-    x={ 0 };
-    y={ 0 };
+    gridx={ 0 };
+    gridy={ 0 };
     bool windowInitialized = initializeWindow();
     if (!windowInitialized) {
         return -1;
@@ -165,7 +217,7 @@ bool initializeVertexbuffer() {
     glGenBuffers(2, vertexbuffer);
     glGenBuffers(1, &EBO);
     
-
+    
     
 
     for (float x = 0; x <= width; x += (width / cell_dimension)) {
@@ -208,11 +260,13 @@ void updateAnimationLoop(){
     uniformlocation = glGetUniformLocation(programID, "acol");
     glUniform3f(uniformlocation, 0.0f, 0.0f, 0.0f);
     uniformlocation = glGetUniformLocation(programID, "addPos");
-    glUniform3f(uniformlocation, x, y, 0);
+    glUniform3f(uniformlocation, gridx, gridy, 0);
     glBindVertexArray(VertexArrayID[1]);
     glDrawArrays(GL_LINES,0,grid.size());
 
-
+    glBindVertexArray(VertexArrayID[0]);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glDrawElements(GL_TRIANGLES, rect_indices.size(), GL_UNSIGNED_INT, 0);
     
     
     
