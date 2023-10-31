@@ -25,8 +25,12 @@ float mousemovy{ 0 };
 bool drag = false;
 std::vector<float> grid;
 int clickgird[];
+
+//placed rectangles
 std::vector<float> rectangles;
 std::vector<int> rect_indices;
+
+
 unsigned int EBO;
 //glm::mat4 projection = glm::ortho(0.0f, width, height, 0.0f, -1.0f, 1.0f);
 float rad = 45.0f;
@@ -37,13 +41,13 @@ glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 glm::mat4 camera = glm::lookAt(cameraPosition, cameraTarget, cameraUp);
 
 
+
 struct GridSquare {
-    float x;       // Top-left x-coordinate
-    float y;       // Top-left y-coordinate
-    float width;   // Width of the square
-    float height;  // Height of the square
+    glm::vec3 verticies[4];
 };
-std::vector<GridSquare> gridSquares;
+
+std::vector<GridSquare> grid_square;
+
 
 
 struct RectangleVertex {
@@ -57,6 +61,12 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
 }
+
+
+
+
+
+
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
         
@@ -73,18 +83,24 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         //W=1; ? Its a vector isnt it?
 
         glm::vec4 ray_clip = glm::vec4((float)(2.0 * xpos / width - 1.0), (float)(1.0 - 2.0 * ypos / height), -1.0, 1.0);
+        //we create a ray from the click of a mouse to ndc, z=-1 points into screen, 1.0 homogenous coordinate its a vector
+
+
         //get inverse projection because mvp*camera
 
-        glm::mat4 invProjection = glm::inverse(projection);
-        glm::mat4 invView = glm::inverse(camera);
-        glm::vec4 ray_eye = invProjection * ray_clip;
-        ray_eye = glm::vec4(ray_eye.x, ray_eye.y, -1.0, 0.0);
-        glm::vec3 ray_wor = glm::vec3(invView * ray_eye);  
-        ray_wor = glm::normalize(ray_wor); 
+        //https://antongerdelan.net/opengl/raycasting.html
 
         //WELP Now i need to determine an intersection of the square plane but I NEVER SAVED THE GRID VERTICIES. They are permanently stored and drawn from the buffer.............
         //structs here we go
+        //created struct gridsquare which is stored in vector grid_square;
+        //this struct has all bottom right coordinates of the square and its height and width? Why i am storing them I do not know
 
+        for (const GridSquare& square : grid_square) {
+            
+
+
+
+        }
 
         std::cout << xpos << " " << ypos << std::endl;
 
@@ -298,26 +314,58 @@ bool initializeVertexbuffer() {
     
     
     
-
+    
     for (float x = 0; x <= width; x += (width / cell_dimension)) {
         for (float y = 0.0f; y <= height; y += (height / cell_dimension)) {
             grid.insert(grid.end(), { x, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f });
             grid.insert(grid.end(), { x, height, 0.0f, 1.0f, 0.0f, 0.0f });
             grid.insert(grid.end(), { 0.0f, y, 0.0f, 1.0f, 0.0f, 0.0f });
             grid.insert(grid.end(), { width, y, 0.0f, 1.0f, 0.0f, 0.0f });
-
+           
         }
     }
     
+
+    for (float x = 0.0; x < cell_dimension-1; x++) {
+        for (float y = 0.0; y < cell_dimension-1; y++) {
+
+            GridSquare s;
+
+            float x0 = x * (width / cell_dimension);
+            float y0 = y * (height / cell_dimension);
+            float x1 = (x + 1) * (width / cell_dimension);
+            float y1 = y0;
+            float x2 = x1;
+            float y2 = (y + 1) * (height / cell_dimension);
+            float x3 = x0;
+            float y3 = x2;
+
+            s.verticies[0] = glm::vec3(x0, y0, 0.0f);
+            s.verticies[1] = glm::vec3(x1, y1, 0.0f);
+            s.verticies[2] = glm::vec3(x2, y2, 0.0f);
+            s.verticies[3] = glm::vec3(x3, y3, 0.0f);
+            grid_square.push_back(s);
+        }
+    }
+    
+   
+    
+
+
     //Initialize grid 
     glBindVertexArray(VertexArrayID[1]);
     glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer[1]);
+
     glBufferData(GL_ARRAY_BUFFER, grid.size()*sizeof(float), grid.data(), GL_STATIC_DRAW);
+
+    
     glVertexAttribPointer(0,3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0),
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
     
+
+
     //Initialize placed 
     
 
@@ -347,9 +395,11 @@ void updateAnimationLoop(){
     glUniform3f(uniformlocation, 0.0f, 0.0f, 0.0f);
     uniformlocation = glGetUniformLocation(programID, "addPos");
     glUniform3f(uniformlocation, gridx, gridy, 0);
+    
+    
     glBindVertexArray(VertexArrayID[1]);
     glDrawArrays(GL_LINES,0,grid.size());
-
+    
 
     //Draw Rectangles
     uniformlocation = glGetUniformLocation(programID, "acol");
