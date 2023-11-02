@@ -35,10 +35,22 @@ unsigned int EBO;
 //glm::mat4 projection = glm::ortho(0.0f, width, height, 0.0f, -1.0f, 1.0f);
 float rad = 45.0f;
 glm::mat4 projection = glm::perspective(glm::radians(rad),1.0f,0.1f,1000.0f);
+
+//how to set at middle of grid?
+
 glm::vec3 cameraPosition = glm::vec3(0.0f, 0.0f, 1000.0f);
 glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f);
 glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 glm::mat4 camera = glm::lookAt(cameraPosition, cameraTarget, cameraUp);
+
+
+
+//Model Matrices
+
+glm::vec3 scalevector = glm::vec3(200.0f, 200.0f, 0.0f);
+glm::mat4 scalematrix = glm::scale(glm::mat4(1.0f), scalevector);
+glm::vec3 translation = glm::vec3(0.0f, 0.0f, 0.0f);
+glm::mat4 translationmatrix = glm::translate(glm::mat4(1.0f), translation);
 
 
 
@@ -66,7 +78,6 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 
 
 
-
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
         
@@ -82,22 +93,30 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         //Homogenous coordinates to camera coordinates to world space coordinates
         //W=1; ? Its a vector isnt it?
 
-        glm::vec4 ray_clip = glm::vec4((float)(2.0 * xpos / width - 1.0), (float)(1.0 - 2.0 * ypos / height), -1.0, 1.0);
         //we create a ray from the click of a mouse to ndc, z=-1 points into screen, 1.0 homogenous coordinate its a vector
-
-
-        //get inverse projection because mvp*camera
-
         //https://antongerdelan.net/opengl/raycasting.html
+
+        //Transforming from viewport space to NDC-S
+        float x_ndc = (2.0f * xpos) / width - 1.0f;
+        float y_ndc = 1.0f - (2.0f * ypos) / height;
+        glm::vec3 ray_nds = glm::vec3(x_ndc, y_ndc, 1.0f);
+        //Transforming from NDC-S to Homogenous Space
+        glm::vec4 ray_clip = glm::vec4(ray_nds.x, ray_nds.y, -1.0, 1.0);
+        //Homogenous Space to Eye Space
+        glm::vec4 ray_eye = inverse(projection) * ray_clip;
+        ray_eye = glm::vec4(ray_eye.x, ray_eye.y, -1.0, 0.0);
+        //Eye To world space
+        glm::vec3 ray_wor = glm::vec3((inverse(camera) * ray_eye).x, (inverse(camera) * ray_eye).y, (inverse(camera) * ray_eye).z);
+        ray_wor = glm::normalize(ray_wor);
 
         //WELP Now i need to determine an intersection of the square plane but I NEVER SAVED THE GRID VERTICIES. They are permanently stored and drawn from the buffer.............
         //structs here we go
         //created struct gridsquare which is stored in vector grid_square;
         //this struct has all bottom right coordinates of the square and its height and width? Why i am storing them I do not know
-
+        std::cout << ray_wor.x << " "<< ray_wor.y << " " << ray_wor.z << " \n";
         for (const GridSquare& square : grid_square) {
             
-
+            
 
 
         }
@@ -184,16 +203,24 @@ void processInput(GLFWwindow* window) {
         glfwSetWindowShouldClose(window, true);
     }
     else if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-        gridy -= 10.0f;
+        //gridy -= 10.0f;
+        translation.y -= 10.0f;
+        translationmatrix = glm::translate(glm::mat4(1.0f), translation);
     }
     else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        gridy += 10.0f;
+        //gridy += 10.0f;
+        translation.y += 10.0f;
+        translationmatrix = glm::translate(glm::mat4(1.0f), translation);
     }
     else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-        gridx += 10.0f;
+        //gridx += 10.0f;
+        translation.x += 10.0f;
+        translationmatrix = glm::translate(glm::mat4(1.0f), translation);
     }
     else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-        gridx -= 10.0f;
+        //gridx -= 10.0f;
+        translation.x -= 10.0f;
+        translationmatrix = glm::translate(glm::mat4(1.0f), translation);
     }
     else if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS) {
         rad += 1.0f;
@@ -315,14 +342,17 @@ bool initializeVertexbuffer() {
     
     
     
-    for (float x = 0; x <= width; x += (width / cell_dimension)) {
-        for (float y = 0.0f; y <= height; y += (height / cell_dimension)) {
-            grid.insert(grid.end(), { x, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f });
-            grid.insert(grid.end(), { x, height, 0.0f, 1.0f, 0.0f, 0.0f });
-            grid.insert(grid.end(), { 0.0f, y, 0.0f, 1.0f, 0.0f, 0.0f });
-            grid.insert(grid.end(), { width, y, 0.0f, 1.0f, 0.0f, 0.0f });
-           
-        }
+    float step = 2.0f / cell_dimension;
+    for (float x = -1.0f; x <= 1.0f + step / 2.0f; x += step) {
+        grid.insert(grid.end(), { x, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f });
+        grid.insert(grid.end(), { x, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f });
+    }
+
+    for (float y = -1.0f; y <= 1.0f + step / 2.0f; y += step ) {
+
+        grid.insert(grid.end(), { -1.0f, y, 0.0f, 1.0f, 0.0f, 0.0f });
+        grid.insert(grid.end(), { 1.0f, y, 0.0f, 1.0f, 0.0f, 0.0f });
+
     }
     
 
@@ -375,20 +405,28 @@ bool initializeVertexbuffer() {
 
 
 void updateAnimationLoop(){
+    //camera = glm::mat4(1.0f);
+    //projection = glm::mat4(1.0f);
     // Clear the screen
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
     //get Projectionmatrix and pass it into the fragment shader
     int uniformlocation;
-    uniformlocation = glGetUniformLocation(programID, "MVP");
-    glUniformMatrix4fv(uniformlocation, 1, GL_FALSE, &projection[0][0]);
     
+    
+    uniformlocation = glGetUniformLocation(programID, "scalematrix");
+    glUniformMatrix4fv(uniformlocation, 1, GL_FALSE, &scalematrix[0][0]);
+
+    uniformlocation = glGetUniformLocation(programID, "translationmatrix");
+    glUniformMatrix4fv(uniformlocation, 1, GL_FALSE, &translationmatrix[0][0]);
    
 
-    uniformlocation = glGetUniformLocation(programID, "camera");
+    uniformlocation = glGetUniformLocation(programID, "view");
     glUniformMatrix4fv(uniformlocation, 1, GL_FALSE, &camera[0][0]);
 
+    uniformlocation = glGetUniformLocation(programID, "projection");    
+    glUniformMatrix4fv(uniformlocation, 1, GL_FALSE, &projection[0][0]);    
     
     //draw Grid
     uniformlocation = glGetUniformLocation(programID, "acol");
