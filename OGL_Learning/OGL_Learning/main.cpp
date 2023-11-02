@@ -13,7 +13,7 @@ GLFWwindow* window;
 
 const float width{ 1000 };
 const float height{ 1000 };
-
+float zoomFactor = 1.0f;
 
 const int cell_dimension = 20;
 const int sq_size = width / cell_dimension;
@@ -98,6 +98,8 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 
     }
 }
+
+
 
 
 void processInput(GLFWwindow* window) {
@@ -266,6 +268,9 @@ void updateAnimationLoop(){
     glBindVertexArray(VertexArrayID[1]);
     glDrawArrays(GL_LINES,0,grid.size());
 
+
+    uniformlocation = glGetUniformLocation(programID, "acol");
+    glUniform3f(uniformlocation, 0.0f, 1.0f, 0.0f);
     glBindVertexArray(VertexArrayID[0]);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glDrawElements(GL_TRIANGLES, rect_indices.size(), GL_UNSIGNED_INT, 0);
