@@ -77,7 +77,6 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 
 
 
-
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
         
@@ -107,27 +106,77 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         ray_eye = glm::vec4(ray_eye.x, ray_eye.y, -1.0, 0.0);
         //Eye To world space
         glm::vec3 ray_wor = glm::vec3((inverse(camera) * ray_eye).x, (inverse(camera) * ray_eye).y, (inverse(camera) * ray_eye).z);
+
+        //To be honest it would be nice knowing if this ray_world direction vector is realy correct. Hahah... To bad, that it wont work until i implemented the fricking collision algorithm............ 
         ray_wor = glm::normalize(ray_wor);
 
         //WELP Now i need to determine an intersection of the square plane but I NEVER SAVED THE GRID VERTICIES. They are permanently stored and drawn from the buffer.............
         //structs here we go
         //created struct gridsquare which is stored in vector grid_square;
-        //this struct has all bottom right coordinates of the square and its height and width? Why i am storing them I do not know
+        //this struct has all bottom right coordinates of the square and its height and width? Why i am storing them I do not know. Im going Hollow probably? Solaire...
         std::cout << ray_wor.x << " "<< ray_wor.y << " " << ray_wor.z << " \n";
+
+        
+        
         for (const GridSquare& square : grid_square) {
             
+            //Aqquire all 4 verticies of square multiplicate ndc verticies * ModelMatrice to get the world coordinates of the respected verticies
             
 
+            //Testing
 
+            
+            glm::vec4 square_world_vertex[4];
+            for (int i = 0; i < 4; i++) {
+                square_world_vertex[i] = translationmatrix * scalematrix * glm::vec4(square.verticies[i].x, square.verticies[i].y,0.0f,1.0f); //Its a position w = 1.0f
+            }
+            //just ignore w
+            glm::vec3 A = glm::vec3(square_world_vertex[0]);
+            glm::vec3 B = glm::vec3(square_world_vertex[1]);
+            glm::vec3 C = glm::vec3(square_world_vertex[2]);
+            glm::vec3 D = glm::vec3(square_world_vertex[3]);
+
+            //Create a plane of 4 verticies 
+
+            glm::vec3 AB = B - A;
+            glm::vec3 CD = D - C;
+
+            glm::vec3 normal_vector = glm::cross(AB, CD);
+            normal_vector = glm::normalize(normal_vector);
+            
+            //define a normal: done
+            //add a distance d to offset it from origin?
+            
+
+            double distance = glm::dot(normal_vector, (cameraPosition - A));
+            float t = glm::dot(cameraPosition * ray_wor, normal_vector) + distance;
+
+            if (t == 0) {
+                std::cout << "Ray is coplanar with the plane\n";
+            }if (t < 0) {
+                std::cout << "No Intersection\n";
+            }
+            else {
+                std::cout << "Intersection occurs\n";
+                rectangle_verticies.insert(rectangle_verticies.end(), {
+                    RectangleVertex{square.verticies[0].x,square.verticies[0].y,0.0f},
+                    RectangleVertex{square.verticies[1].x,square.verticies[1].y,0.0f},
+                    RectangleVertex{square.verticies[2].x,square.verticies[2].y,0.0f},
+                    RectangleVertex{square.verticies[3].x,square.verticies[3].y,0.0f}
+                    });
+            }
+
+            
         }
+        
 
         std::cout << xpos << " " << ypos << std::endl;
 
 
-
+        /*
         double cell_width = width / (double)cell_dimension;
-        int column = (int)((xpos- gridx) / cell_width);
-        int row = (int)((ypos - gridy) / cell_width);
+        int column = (int)((xpos- translation.x) / cell_width);
+        int row = (int)((ypos - translation.y) / cell_width);
         
         
         
@@ -154,11 +203,8 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         float ylb = ylt + cell_width;
         float xrb = xlb + cell_width;
         float yrb = ylb;
-
-        unsigned int indices[] = {
-            0, 1, 2,
-            2, 3, 0
-        };
+        
+       
 
         rectangle_verticies.insert(rectangle_verticies.end(), { 
             RectangleVertex{xlt, ylt, 0.0f}, 
@@ -166,8 +212,15 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
             RectangleVertex{xrb, yrb, 0.0f},
             RectangleVertex{xlb, ylb, 0.0f}
         });
+        */
+        
 
-        std::cout << "XLT: " << xlt << " ylt: " << ylt << std::endl;
+        unsigned int indices[] = {
+           0, 1, 2,
+           2, 3, 0
+        };
+
+        //std::cout << "XLT: " << xlt << " ylt: " << ylt << std::endl;
 
         unsigned int baseIndex = rectangle_verticies.size() - 4; 
         for (unsigned int i = 0; i < 6; i++) {
@@ -245,8 +298,8 @@ void scroll_callback(GLFWwindow* window , double xoffset, double yoffset){
 
 int main( void )
 {
-    gridx={ 0 };
-    gridy={ 0 };
+    //gridx={ 0 };
+    //gridy={ 0 };
     bool windowInitialized = initializeWindow();
     if (!windowInitialized) {
         return -1;
@@ -361,12 +414,12 @@ bool initializeVertexbuffer() {
 
             GridSquare s;
 
-            float x0 = x * (width / cell_dimension);
-            float y0 = y * (height / cell_dimension);
-            float x1 = (x + 1) * (width / cell_dimension);
+            float x0 = x * (2.0f / cell_dimension);
+            float y0 = y * (2.0f / cell_dimension);
+            float x1 = (x + 1) * (2.0f / cell_dimension);
             float y1 = y0;
             float x2 = x1;
-            float y2 = (y + 1) * (height / cell_dimension);
+            float y2 = (y + 1) * (2.0f / cell_dimension);
             float x3 = x0;
             float y3 = x2;
 

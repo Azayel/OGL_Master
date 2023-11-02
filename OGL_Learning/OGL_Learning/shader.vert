@@ -10,6 +10,7 @@ uniform mat4 scalematrix;
 
 void main()
 {
+	//calculation of model matrice 
 	mat4 model = translationmatrix * scalematrix;
    gl_Position = projection * view * model * vec4(aPos+addPos, 1.0);
    ourCol = aCol;
