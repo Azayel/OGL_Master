@@ -69,6 +69,9 @@ struct RectangleVertex {
 std::vector<RectangleVertex> rectangle_verticies;
 std::vector<unsigned int> rectangle_indicies;
 
+
+
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
@@ -118,6 +121,35 @@ void calc_intersection(glm::vec3 ray_wor, GridSquare square) {
 }
 
 
+void testing(double xpos, double ypos, glm::vec3 P0) {
+    
+    glm::vec3 screenPoint1 = glm::vec3(xpos, ypos, 0.0f);
+    glm::vec3 screenPoint2 = glm::vec3(xpos, ypos, 20.0f);
+
+    glm::mat4 model = translationmatrix * scalematrix;
+    glm::vec3 screenPoint1_frustum = glm::vec3((2.0f * xpos) / width - 1.0f, 1.0f - (2.0f * ypos) / height, 0.0f);
+    glm::vec3 screenPoint2_frustum = glm::vec3((2.0f * xpos) / width - 1.0f, 1.0f - (2.0f * ypos) / height, 20.0f);
+    glm::vec4 screenPoint1_h = glm::vec4(screenPoint1_frustum, 1.0f);
+    glm::vec4 screenPoint2_h = glm::vec4(screenPoint1_frustum, 1.0f);
+    glm::vec4 inversescreenpoint1 = glm::inverse(projection) * screenPoint1_h;
+    glm::vec4 inversescreenpoint2 = glm::inverse(projection) * screenPoint2_h;
+    glm::vec4 modelPoint1 = glm::inverse(camera) *  inversescreenpoint1;
+    glm::vec4 modelPoint2 = glm::inverse(camera) * inversescreenpoint2;
+
+
+    glm::vec3 L = modelPoint1 - modelPoint2;
+    glm::vec3 L0 = modelPoint1;
+
+    //Solve for d where dot((d * L + L0 - P0), n) = 0
+    float d = glm::dot(P0 - L0, glm::vec3(0.0f,0.0f,1.0f)) / glm::dot(L, glm::vec3(0.0f, 0.0f, 1.0f));
+    std::cout << "d is: " << d << "\n";
+    //Use d to get back to point on plane
+    glm::vec3 pointOnPlane = d * L + L0;
+
+    //Sound of trumpets in the background
+    std::cout << pointOnPlane.x << "  aaaaaa " << pointOnPlane.y << std::endl;
+}
+
 
 
 
@@ -127,7 +159,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         double xpos, ypos;
         glfwGetCursorPos(window, &xpos, &ypos);
         
-        //May God Save me for i do not know if i have the strength to go forther. 
+        //May God Save me for i do not know if i have the strength to go further. 
         //The idea is to transform the mouseclick into a ray which shoots of into the grid and determine if an intersection of the ray and a plane exists?????? HELP
         //this will certainly kill my brain. Too bad.
 
@@ -169,11 +201,8 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         double cell_width = width / (double)cell_dimension;
         int column = (int)((xpos- translation.x) / cell_width);
         int row = (int)((ypos - translation.y) / cell_width);
-        
-        
-        
-        
-        
+       
+
         
         
         std::cout << column << " " << row << " " << cell_width <<  std::endl;
