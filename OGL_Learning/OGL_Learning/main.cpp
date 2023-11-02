@@ -11,8 +11,9 @@
 //Window
 GLFWwindow* window;
 
-const float width{ 1000 };
-const float height{ 1000 };
+const float width{ 1000.0f };
+const float height{ 1000.0f };
+
 
 
 const int cell_dimension = 20;
@@ -25,7 +26,7 @@ float mousemovy{ 0 };
 bool drag = false;
 std::vector<float> grid;
 int clickgird[];
-
+float world_grid_cell_size = 0;
 //placed rectangles
 std::vector<float> rectangles;
 std::vector<int> rect_indices;
@@ -35,7 +36,6 @@ unsigned int EBO;
 //glm::mat4 projection = glm::ortho(0.0f, width, height, 0.0f, -1.0f, 1.0f);
 float rad = 45.0f;
 glm::mat4 projection = glm::perspective(glm::radians(rad),1.0f,0.1f,1000.0f);
-
 //how to set at middle of grid?
 
 glm::vec3 cameraPosition = glm::vec3(0.0f, 0.0f, 1000.0f);
@@ -73,6 +73,50 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
 }
+
+void calc_intersection(glm::vec3 ray_wor, GridSquare square) {
+    glm::vec4 square_world_vertex[4];
+    for (int i = 0; i < 4; i++) {
+        square_world_vertex[i] = translationmatrix * scalematrix * glm::vec4(square.verticies[i].x, square.verticies[i].y, 0.0f, 1.0f); //Its a position w = 1.0f
+    }
+    //just ignore w
+    glm::vec3 A = glm::vec3(square_world_vertex[0]);
+    glm::vec3 B = glm::vec3(square_world_vertex[1]);
+    glm::vec3 C = glm::vec3(square_world_vertex[2]);
+    glm::vec3 D = glm::vec3(square_world_vertex[3]);
+
+    //Create a plane of 4 verticies 
+
+    glm::vec3 AB = B - A;
+    glm::vec3 CD = D - C;
+
+    glm::vec3 normal_vector = glm::cross(AB, CD);
+    normal_vector = glm::normalize(normal_vector);
+
+    //define a normal: done
+    //add a distance d to offset it from origin?
+
+
+    double distance = glm::dot(normal_vector, (cameraPosition - A));
+    float t = glm::dot(cameraPosition * ray_wor, normal_vector) + distance;
+
+    if (t == 0) {
+        //std::cout << "Ray is coplanar with the plane\n";
+    }if (t < 0) {
+        //std::cout << "No Intersection\n";
+    }
+    else {
+        //std::cout << "Intersection occurs\n";
+        rectangle_verticies.insert(rectangle_verticies.end(), {
+            RectangleVertex{square.verticies[0].x,square.verticies[0].y,0.0f},
+            RectangleVertex{square.verticies[1].x,square.verticies[1].y,0.0f},
+            RectangleVertex{square.verticies[2].x,square.verticies[2].y,0.0f},
+            RectangleVertex{square.verticies[3].x,square.verticies[3].y,0.0f}
+            });
+    }
+
+}
+
 
 
 
@@ -117,63 +161,11 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         std::cout << ray_wor.x << " "<< ray_wor.y << " " << ray_wor.z << " \n";
 
         
-        
-        for (const GridSquare& square : grid_square) {
-            
-            //Aqquire all 4 verticies of square multiplicate ndc verticies * ModelMatrice to get the world coordinates of the respected verticies
-            
-
-            //Testing
-
-            
-            glm::vec4 square_world_vertex[4];
-            for (int i = 0; i < 4; i++) {
-                square_world_vertex[i] = translationmatrix * scalematrix * glm::vec4(square.verticies[i].x, square.verticies[i].y,0.0f,1.0f); //Its a position w = 1.0f
-            }
-            //just ignore w
-            glm::vec3 A = glm::vec3(square_world_vertex[0]);
-            glm::vec3 B = glm::vec3(square_world_vertex[1]);
-            glm::vec3 C = glm::vec3(square_world_vertex[2]);
-            glm::vec3 D = glm::vec3(square_world_vertex[3]);
-
-            //Create a plane of 4 verticies 
-
-            glm::vec3 AB = B - A;
-            glm::vec3 CD = D - C;
-
-            glm::vec3 normal_vector = glm::cross(AB, CD);
-            normal_vector = glm::normalize(normal_vector);
-            
-            //define a normal: done
-            //add a distance d to offset it from origin?
-            
-
-            double distance = glm::dot(normal_vector, (cameraPosition - A));
-            float t = glm::dot(cameraPosition * ray_wor, normal_vector) + distance;
-
-            if (t == 0) {
-                std::cout << "Ray is coplanar with the plane\n";
-            }if (t < 0) {
-                std::cout << "No Intersection\n";
-            }
-            else {
-                std::cout << "Intersection occurs\n";
-                rectangle_verticies.insert(rectangle_verticies.end(), {
-                    RectangleVertex{square.verticies[0].x,square.verticies[0].y,0.0f},
-                    RectangleVertex{square.verticies[1].x,square.verticies[1].y,0.0f},
-                    RectangleVertex{square.verticies[2].x,square.verticies[2].y,0.0f},
-                    RectangleVertex{square.verticies[3].x,square.verticies[3].y,0.0f}
-                    });
-            }
-
-            
-        }
-        
 
         std::cout << xpos << " " << ypos << std::endl;
 
 
-        /*
+        
         double cell_width = width / (double)cell_dimension;
         int column = (int)((xpos- translation.x) / cell_width);
         int row = (int)((ypos - translation.y) / cell_width);
@@ -212,7 +204,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
             RectangleVertex{xrb, yrb, 0.0f},
             RectangleVertex{xlb, ylb, 0.0f}
         });
-        */
+        
         
 
         unsigned int indices[] = {
@@ -274,12 +266,6 @@ void processInput(GLFWwindow* window) {
         //gridx -= 10.0f;
         translation.x -= 10.0f;
         translationmatrix = glm::translate(glm::mat4(1.0f), translation);
-    }
-    else if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS) {
-        rad += 1.0f;
-    }
-    else if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS) {
-        rad -= 1.0f;
     }
     
     
@@ -408,6 +394,9 @@ bool initializeVertexbuffer() {
 
     }
     
+    
+
+
 
     for (float x = 0.0; x < cell_dimension-1; x++) {
         for (float y = 0.0; y < cell_dimension-1; y++) {
