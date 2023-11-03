@@ -1,12 +1,15 @@
 #include "mainloop.h";
 #include "Shader.h"
+#include "cells.h"
+
 #include <glad/glad.h>
-#include <GLFW/glfw3.h>
 #include <iostream>
-#include <vector>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glfw3.h>
+
+cells* mycells;
 
 //Window
 GLFWwindow* window;
@@ -69,11 +72,15 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         float xrb = xlb + cell_width;
         float yrb = ylb;
 
+        /*
+        //DONE
         unsigned int indices[] = {
             0, 1, 2,
             2, 3, 0
         };
 
+        
+        //DONE
         rectangle_verticies.insert(rectangle_verticies.end(), { 
             RectangleVertex{xlt, ylt, 0.0f}, 
             RectangleVertex{xrt, yrt, 0.0f},
@@ -81,8 +88,9 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
             RectangleVertex{xlb, ylb, 0.0f}
         });
 
-        std::cout << "XLT: " << xlt << " ylt: " << ylt << std::endl;
 
+        //std::cout << "XLT: " << xlt << " ylt: " << ylt << std::endl;
+        //DONE
         unsigned int baseIndex = rectangle_verticies.size() - 4; 
         for (unsigned int i = 0; i < 6; i++) {
             rect_indices.push_back(baseIndex + indices[i]);
@@ -100,7 +108,10 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, rect_indices.size() * sizeof(unsigned int), rect_indices.data(), GL_STATIC_DRAW);
+        */
 
+        std::vector<glm::vec3> addVector = { glm::vec3{xlt, ylt, 0.0f},glm::vec3{xrt, yrt, 0.0f},glm::vec3{xrb, yrb, 0.0f},glm::vec3{xlb, ylb, 0.0f} };
+        mycells->add(addVector);
     }
 }
 
@@ -147,7 +158,7 @@ int main( void )
     bool vertexBufferInitialized = initializeVertexbuffer();
     if (!vertexBufferInitialized) return -1;
     vbinit = true;
-
+    mycells = new cells();
    
     
    
@@ -175,6 +186,8 @@ int main( void )
     glDeleteVertexArrays(1, VertexArrayID); 
     glDeleteBuffers(1, vertexbuffer);  
     glDeleteProgram(programID);
+
+    delete mycells;
 
     glfwTerminate();
     return 0;
@@ -291,10 +304,12 @@ void updateAnimationLoop(){
 
     uniformlocation = glGetUniformLocation(programID, "acol");
     glUniform3f(uniformlocation, 0.0f, 1.0f, 0.0f);
+    /*
     glBindVertexArray(VertexArrayID[0]);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glDrawElements(GL_TRIANGLES, rect_indices.size(), GL_UNSIGNED_INT, 0);
-    
+    */
+    mycells->draw();
     
     
 
