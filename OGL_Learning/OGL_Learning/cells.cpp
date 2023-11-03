@@ -24,9 +24,13 @@ cells::cells() {
 }
 
 bool cells::add(std::vector<glm::vec3> v_add) {
+    
 
     if (v_add.size() != 4) {
         std::cout << "std::vector.size() is not 4.\n";
+        return false;
+    }
+    if (this->exists(v_add)) {
         return false;
     }
 
@@ -63,4 +67,33 @@ void cells::draw() {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
     glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 
+}
+
+bool cells::exists(const std::vector<glm::vec3>& tosearch) {
+    if (vertices.size() % 4 != 0) {
+        std::cout << "Impossible to search if exist due to error in stack, can't be divided by 4.\n";
+        return false; // Return false to indicate that the search is impossible.
+    }
+
+    for (size_t i = 0; i < vertices.size(); i += 4) {
+        bool match = false;
+
+        for (size_t j = 0; j < 4; j++) {
+            if (vertices[i + j] != tosearch[j]) {
+                break; 
+            }
+            else {
+                match = true;
+                break;
+            }
+        }
+
+        if (match) {
+            std::cout << "Found Match\n";
+            return true;  // Return true as soon as a matching quad is found.
+        }
+    }
+
+    std::cout << "Match not found\n";
+    return false;  // If no match is found, return false.
 }

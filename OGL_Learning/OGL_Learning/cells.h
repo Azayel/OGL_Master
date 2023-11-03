@@ -13,6 +13,7 @@ class cells {
 
 
 	void update_indices();
+	bool exists(const std::vector<glm::vec3>&);
 
 public:
 	

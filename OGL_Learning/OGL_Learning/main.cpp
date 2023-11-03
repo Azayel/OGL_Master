@@ -30,7 +30,7 @@ std::vector<float> rectangles;
 std::vector<int> rect_indices;
 unsigned int EBO;
 
-glm::mat4 projection = glm::ortho(0.0f, width, height, 0.0f, -1.0f, 1.0f);
+glm::mat4 projection = glm::ortho(0.0f, width, 0.0f, height, -1.0f, 1.0f);
 glm::vec3 transformation = glm::vec3(0.0f,0.0f,0.0f);
 glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f),transformation);
 
@@ -44,6 +44,16 @@ struct RectangleVertex {
 std::vector<RectangleVertex> rectangle_verticies;
 std::vector<unsigned int> rectangle_indicies;
 
+
+glm::vec3 positions_to_world_from_screen(glm::vec3 coord) {
+    glm::vec3 ndc_vec3 = glm::vec3(((2.0f * coord.x) / width - 1.0f), (1.0f - (2.0f * coord.y) / height), 0.0f);
+    glm::vec4 homogeneous_ndc_vec4 = glm::vec4(ndc_vec3, 1.0f);
+    glm::vec4 inverse_projection_point = glm::inverse(projection) * homogeneous_ndc_vec4;
+    inverse_projection_point = inverse_projection_point - glm::vec4(transformation,1.0f);
+    std::cout << "x: " << inverse_projection_point.x << " y: " << inverse_projection_point.y << "\n";
+    return glm::vec3(inverse_projection_point.x, inverse_projection_point.y, inverse_projection_point.z);
+}
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
@@ -51,18 +61,18 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
         double xpos, ypos;
-       
+        
         glfwGetCursorPos(window, &xpos, &ypos);
         std::cout << xpos << " " << ypos << std::endl;
+
+        
         double cell_width = width / (double)cell_dimension;
-        int column = (int)((xpos- transformation.x) / cell_width);
-        int row = (int)((ypos - transformation.y) / cell_width);
-        std::cout << column << " " << row << " " << cell_width <<  std::endl;
-        
+        glm::vec3 gridcheck = positions_to_world_from_screen(glm::vec3(xpos, ypos, 0.0f));
+        int column = glm::floor((gridcheck.x / cell_width));
+        int row = glm::floor((gridcheck.y / cell_width));
+        std::cout << column << " " << row << " aaand " << cell_width << std::endl;
         if (!(column >= 0 && column < cell_dimension && row >= 0 && row < cell_dimension)) return;
-           
-        
-        //1. Get the 4 Vertex Coordiates
+
         float xlt = column * cell_width;
         float ylt = row * cell_width;
         float xrt = xlt + cell_width;
@@ -71,49 +81,23 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         float ylb = ylt + cell_width;
         float xrb = xlb + cell_width;
         float yrb = ylb;
-
-        /*
-        //DONE
-        unsigned int indices[] = {
-            0, 1, 2,
-            2, 3, 0
-        };
-
-        
-        //DONE
-        rectangle_verticies.insert(rectangle_verticies.end(), { 
-            RectangleVertex{xlt, ylt, 0.0f}, 
-            RectangleVertex{xrt, yrt, 0.0f},
-            RectangleVertex{xrb, yrb, 0.0f},
-            RectangleVertex{xlb, ylb, 0.0f}
-        });
-
-
-        //std::cout << "XLT: " << xlt << " ylt: " << ylt << std::endl;
-        //DONE
-        unsigned int baseIndex = rectangle_verticies.size() - 4; 
-        for (unsigned int i = 0; i < 6; i++) {
-            rect_indices.push_back(baseIndex + indices[i]);
-        }
-        
-        glBindVertexArray(VertexArrayID[0]);
-        glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer[0]);
-
-        glBufferData(GL_ARRAY_BUFFER, rectangle_verticies.size() * sizeof(RectangleVertex), rectangle_verticies.data(), GL_STATIC_DRAW);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-        glEnableVertexAttribArray(0);
-
         
 
+        glm::vec3 lt = glm::vec3(xlt, ylt, 0.0f);
+        glm::vec3 rt = glm::vec3(xrt, yrt, 0.0f);
+        glm::vec3 rb = glm::vec3(xrb, yrb, 0.0f);
+        glm::vec3 lb = glm::vec3(xlb, ylb, 0.0f);
 
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, rect_indices.size() * sizeof(unsigned int), rect_indices.data(), GL_STATIC_DRAW);
-        */
-
-        std::vector<glm::vec3> addVector = { glm::vec3{xlt, ylt, 0.0f},glm::vec3{xrt, yrt, 0.0f},glm::vec3{xrb, yrb, 0.0f},glm::vec3{xlb, ylb, 0.0f} };
+   
+        std::cout << "lt: " << lt.x << " " << lt.y << "\n";
+        std::vector<glm::vec3> addVector = { lt ,rt,rb,lb };
         mycells->add(addVector);
     }
 }
+
+
+
+
 
 
 
@@ -300,15 +284,10 @@ void updateAnimationLoop(){
     
     glBindVertexArray(VertexArrayID[1]);
     glDrawArrays(GL_LINES,0,grid.size());
-
+    
 
     uniformlocation = glGetUniformLocation(programID, "acol");
     glUniform3f(uniformlocation, 0.0f, 1.0f, 0.0f);
-    /*
-    glBindVertexArray(VertexArrayID[0]);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glDrawElements(GL_TRIANGLES, rect_indices.size(), GL_UNSIGNED_INT, 0);
-    */
     mycells->draw();
     
     
