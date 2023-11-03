@@ -2,10 +2,13 @@
 layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec3 aCol;
 out vec3 ourCol;
-uniform vec3 addPos;
-uniform mat4 MVP;	
+uniform mat4 projection;	
+uniform mat4 translation;
+
 void main()
 {
-   gl_Position = MVP * vec4(aPos+addPos, 1.0);
+	mat4 model = translation;
+	mat4 MVP = projection * model;
+   gl_Position = MVP * vec4(aPos, 1.0);
    ourCol = aCol;
 }

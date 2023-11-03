@@ -1,7 +1,7 @@
 #include "mainloop.h";
 #include "Shader.h"
 #include <glad/glad.h>
-#include <glfw3.h>
+#include <GLFW/glfw3.h>
 #include <iostream>
 #include <vector>
 #include <glm/glm.hpp>
@@ -18,7 +18,6 @@ float zoomFactor = 1.0f;
 const int cell_dimension = 20;
 const int sq_size = width / cell_dimension;
 
-float gridx, gridy;
 
 bool vbinit = false;
 bool clicked = false;
@@ -27,7 +26,13 @@ int clickgird[];
 std::vector<float> rectangles;
 std::vector<int> rect_indices;
 unsigned int EBO;
+
 glm::mat4 projection = glm::ortho(0.0f, width, height, 0.0f, -1.0f, 1.0f);
+glm::vec3 transformation = glm::vec3(0.0f,0.0f,0.0f);
+glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f),transformation);
+
+
+
 
 struct RectangleVertex {
     float x, y, z;
@@ -47,8 +52,8 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         glfwGetCursorPos(window, &xpos, &ypos);
         std::cout << xpos << " " << ypos << std::endl;
         double cell_width = width / (double)cell_dimension;
-        int column = (int)((xpos- gridx) / cell_width);
-        int row = (int)((ypos - gridy) / cell_width);
+        int column = (int)((xpos- transformation.x) / cell_width);
+        int row = (int)((ypos - transformation.y) / cell_width);
         std::cout << column << " " << row << " " << cell_width <<  std::endl;
         
         if (!(column >= 0 && column < cell_dimension && row >= 0 && row < cell_dimension)) return;
@@ -108,16 +113,20 @@ void processInput(GLFWwindow* window) {
         glfwSetWindowShouldClose(window, true);
     }
     else if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-        gridy += 10.0f;
+        transformation = glm::vec3{ transformation.x,transformation.y+=1.0f,transformation.z };
+        translationMatrix = glm::translate(glm::mat4(1.0f), transformation);
     }
     else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        gridy -= 10.0f;
+        transformation = glm::vec3{ transformation.x,transformation.y -= 1.0f,transformation.z };
+        translationMatrix = glm::translate(glm::mat4(1.0f), transformation);
     }
     else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-        gridx -= 10.0f;
+        transformation = glm::vec3{ transformation.x -= 1.0f,transformation.y,transformation.z };
+        translationMatrix = glm::translate(glm::mat4(1.0f), transformation);
     }
     else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-        gridx += 10.0f;
+        transformation = glm::vec3{ transformation.x += 1.0f ,transformation.y,transformation.z };
+        translationMatrix = glm::translate(glm::mat4(1.0f), transformation);
     }
     
 
@@ -125,8 +134,7 @@ void processInput(GLFWwindow* window) {
 
 int main( void )
 {
-    gridx={ 0 };
-    gridy={ 0 };
+
     bool windowInitialized = initializeWindow();
     if (!windowInitialized) {
         return -1;
@@ -224,15 +232,21 @@ bool initializeVertexbuffer() {
     
     
 
-    for (float x = 0; x <= width; x += (width / cell_dimension)) {
-        for (float y = 0.0f; y <= height; y += (height / cell_dimension)) {
-            grid.insert(grid.end(), { x, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f });
-            grid.insert(grid.end(), { x, height, 0.0f, 1.0f, 0.0f, 0.0f });
-            grid.insert(grid.end(), { 0.0f, y, 0.0f, 1.0f, 0.0f, 0.0f });
-            grid.insert(grid.end(), { width, y, 0.0f, 1.0f, 0.0f, 0.0f });
+    
 
-        }
+    
+    for (float x = 0; x <= width; x += (width / cell_dimension)) {
+        grid.insert(grid.end(), { x, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f });
+        grid.insert(grid.end(), { x, height, 0.0f, 1.0f, 0.0f, 0.0f });
     }
+
+    for (float y = 0; y <= height; y += (height / cell_dimension)) {
+        grid.insert(grid.end(), { 0.0f, y, 0.0f, 1.0f, 0.0f, 0.0f });
+        grid.insert(grid.end(), { width, y, 0.0f, 1.0f, 0.0f, 0.0f });
+    }
+    
+
+    
     
     //Initialize grid 
     glBindVertexArray(VertexArrayID[1]);
@@ -256,15 +270,21 @@ void updateAnimationLoop(){
     // Clear the screen
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
+
+    
+
     int uniformlocation;
-    uniformlocation = glGetUniformLocation(programID, "MVP");
+    uniformlocation = glGetUniformLocation(programID, "translation");
+    glUniformMatrix4fv(uniformlocation, 1, GL_FALSE, &translationMatrix[0][0]);
+
+    uniformlocation = glGetUniformLocation(programID, "projection");
     glUniformMatrix4fv(uniformlocation, 1, GL_FALSE, &projection[0][0]);
+    
     
 
     uniformlocation = glGetUniformLocation(programID, "acol");
     glUniform3f(uniformlocation, 0.0f, 0.0f, 0.0f);
-    uniformlocation = glGetUniformLocation(programID, "addPos");
-    glUniform3f(uniformlocation, gridx, gridy, 0);
+    
     glBindVertexArray(VertexArrayID[1]);
     glDrawArrays(GL_LINES,0,grid.size());
 
