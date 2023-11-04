@@ -147,7 +147,7 @@ int main( void )
     
    
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); WIRE FRAME
-    Shader myShader("shader.vert", "shader.frag");
+    Shader myShader("grid_shader.vert", "grid_shader.frag");
     myShader.use();
     programID = myShader.getID();
 
@@ -264,6 +264,9 @@ bool initializeVertexbuffer() {
 
 void updateAnimationLoop(){
 
+    //Shader grid
+    glUseProgram(programID);
+
     // Clear the screen
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -285,9 +288,13 @@ void updateAnimationLoop(){
     glBindVertexArray(VertexArrayID[1]);
     glDrawArrays(GL_LINES,0,grid.size());
     
+    //Shader cells
+    glUseProgram(mycells->get_programID());
+    uniformlocation = glGetUniformLocation(programID, "translation");
+    glUniformMatrix4fv(uniformlocation, 1, GL_FALSE, &translationMatrix[0][0]);
 
-    uniformlocation = glGetUniformLocation(programID, "acol");
-    glUniform3f(uniformlocation, 0.0f, 1.0f, 0.0f);
+    uniformlocation = glGetUniformLocation(programID, "projection");
+    glUniformMatrix4fv(uniformlocation, 1, GL_FALSE, &projection[0][0]);
     mycells->draw();
     
     
