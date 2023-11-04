@@ -47,9 +47,9 @@ std::vector<unsigned int> rectangle_indicies;
 
 glm::vec3 positions_to_world_from_screen(glm::vec3 coord) {
     glm::vec3 ndc_vec3 = glm::vec3(((2.0f * coord.x) / width - 1.0f), (1.0f - (2.0f * coord.y) / height), 0.0f);
-    glm::vec4 homogeneous_ndc_vec4 = glm::vec4(ndc_vec3, 1.0f);
+    glm::vec4 homogeneous_ndc_vec4 = glm::vec4(ndc_vec3, 1.0f); //1.0f Due to beeing a position in space
     glm::vec4 inverse_projection_point = glm::inverse(projection) * homogeneous_ndc_vec4;
-    inverse_projection_point = inverse_projection_point - glm::vec4(transformation,1.0f);
+    inverse_projection_point = inverse_projection_point - glm::vec4(transformation,1.0f);   //1.0f "...."
     std::cout << "x: " << inverse_projection_point.x << " y: " << inverse_projection_point.y << "\n";
     return glm::vec3(inverse_projection_point.x, inverse_projection_point.y, inverse_projection_point.z);
 }
@@ -264,30 +264,39 @@ bool initializeVertexbuffer() {
 
 void updateAnimationLoop(){
 
-    //Shader grid
-    glUseProgram(programID);
+   
 
     // Clear the screen
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
-
+    draw_grid();
+    draw_cells();
     
 
+}
+
+
+void draw_grid() {
+    //Shader grid
+    glUseProgram(programID);
     int uniformlocation;
     uniformlocation = glGetUniformLocation(programID, "translation");
     glUniformMatrix4fv(uniformlocation, 1, GL_FALSE, &translationMatrix[0][0]);
 
     uniformlocation = glGetUniformLocation(programID, "projection");
     glUniformMatrix4fv(uniformlocation, 1, GL_FALSE, &projection[0][0]);
-    
-    
+
+
 
     uniformlocation = glGetUniformLocation(programID, "acol");
     glUniform3f(uniformlocation, 0.0f, 0.0f, 0.0f);
-    
+
     glBindVertexArray(VertexArrayID[1]);
-    glDrawArrays(GL_LINES,0,grid.size());
-    
+    glDrawArrays(GL_LINES, 0, grid.size());
+}
+
+void draw_cells() {
+    int uniformlocation;
     //Shader cells
     glUseProgram(mycells->get_programID());
     uniformlocation = glGetUniformLocation(programID, "translation");
@@ -296,7 +305,4 @@ void updateAnimationLoop(){
     uniformlocation = glGetUniformLocation(programID, "projection");
     glUniformMatrix4fv(uniformlocation, 1, GL_FALSE, &projection[0][0]);
     mycells->draw();
-    
-    
-
 }
